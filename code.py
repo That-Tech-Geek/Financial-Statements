@@ -28,6 +28,18 @@ def filter_last_n_years(dataframe, years=10):
     recent_data = dataframe[dataframe.index >= pd.Timestamp.now() - pd.DateOffset(years=years)]
     return recent_data
 
+def fetch_and_process_data(ticker):
+    stock = yf.Ticker(ticker)
+    
+    # Fetch historical data
+    historical_data = stock.history(period="max")
+    
+    # Fetch balance sheet and income statement data
+    balance_sheet = stock.balance_sheet.T
+    income_statement = stock.financials.T
+
+    return historical_data, balance_sheet, income_statement
+
 def main():
     st.title("Company Financial Statements Viewer")
     
@@ -38,9 +50,12 @@ def main():
         st.write(f"Fetching financial statements for ticker: {ticker}")
         try:
             # Fetch data
-            balance_sheet, income_statement = fetch_data(ticker)
+            historical_data, balance_sheet, income_statement = fetch_and_process_data(ticker)
             
             # Print data to debug
+            st.write("Historical Data:")
+            st.dataframe(historical_data)
+            
             st.write("Balance Sheet Data (Raw):")
             st.dataframe(balance_sheet)
             
