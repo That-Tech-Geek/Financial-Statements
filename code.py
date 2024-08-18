@@ -26,19 +26,25 @@ def calculate_ratios(balance_sheet, income_statement):
     income_statement.index = income_statement.index.astype(str)
     
     ratios = pd.DataFrame(index=balance_sheet.columns)
-    
-    # Calculate financial ratios
+
     try:
-        # Example ratios
-        ratios['Current Ratio'] = balance_sheet.loc['Total Current Assets'] / balance_sheet.loc['Total Current Liabilities']
-        ratios['Quick Ratio'] = (balance_sheet.loc['Total Current Assets'] - balance_sheet.loc['Inventory']) / balance_sheet.loc['Total Current Liabilities']
-        ratios['Cash Ratio'] = balance_sheet.loc['Cash And Cash Equivalents'] / balance_sheet.loc['Total Current Liabilities']
-        ratios['Debt to Equity Ratio'] = balance_sheet.loc['Total Liabilities Net Minority Interest'] / balance_sheet.loc['Total Shareholder Equity']
-        ratios['Gross Profit Margin'] = income_statement.loc['Gross Profit'] / income_statement.loc['Total Revenue']
-        ratios['Net Profit Margin'] = income_statement.loc['Net Income'] / income_statement.loc['Total Revenue']
-        ratios['Return on Assets'] = income_statement.loc['Net Income'] / balance_sheet.loc['Total Assets']
-        ratios['Return on Equity'] = income_statement.loc['Net Income'] / balance_sheet.loc['Total Shareholder Equity']
-        ratios['Interest Coverage Ratio'] = income_statement.loc['EBIT'] / income_statement.loc['Interest Expense']
+        # Print available data to debug
+        st.write("Available Balance Sheet Data:")
+        st.dataframe(balance_sheet.head())
+
+        st.write("Available Income Statement Data:")
+        st.dataframe(income_statement.head())
+        
+        # Example ratios - adjust field names based on available data
+        ratios['Current Ratio'] = balance_sheet.get('Total Current Assets', pd.Series([None]*balance_sheet.shape[1])) / balance_sheet.get('Total Current Liabilities', pd.Series([None]*balance_sheet.shape[1]))
+        ratios['Quick Ratio'] = (balance_sheet.get('Total Current Assets', pd.Series([None]*balance_sheet.shape[1])) - balance_sheet.get('Inventory', pd.Series([None]*balance_sheet.shape[1]))) / balance_sheet.get('Total Current Liabilities', pd.Series([None]*balance_sheet.shape[1]))
+        ratios['Cash Ratio'] = balance_sheet.get('Cash And Cash Equivalents', pd.Series([None]*balance_sheet.shape[1])) / balance_sheet.get('Total Current Liabilities', pd.Series([None]*balance_sheet.shape[1]))
+        ratios['Debt to Equity Ratio'] = balance_sheet.get('Total Liabilities Net Minority Interest', pd.Series([None]*balance_sheet.shape[1])) / balance_sheet.get('Total Shareholder Equity', pd.Series([None]*balance_sheet.shape[1]))
+        ratios['Gross Profit Margin'] = income_statement.get('Gross Profit', pd.Series([None]*income_statement.shape[1])) / income_statement.get('Total Revenue', pd.Series([None]*income_statement.shape[1]))
+        ratios['Net Profit Margin'] = income_statement.get('Net Income', pd.Series([None]*income_statement.shape[1])) / income_statement.get('Total Revenue', pd.Series([None]*income_statement.shape[1]))
+        ratios['Return on Assets'] = income_statement.get('Net Income', pd.Series([None]*income_statement.shape[1])) / balance_sheet.get('Total Assets', pd.Series([None]*balance_sheet.shape[1]))
+        ratios['Return on Equity'] = income_statement.get('Net Income', pd.Series([None]*income_statement.shape[1])) / balance_sheet.get('Total Shareholder Equity', pd.Series([None]*balance_sheet.shape[1]))
+        ratios['Interest Coverage Ratio'] = income_statement.get('EBIT', pd.Series([None]*income_statement.shape[1])) / income_statement.get('Interest Expense', pd.Series([None]*income_statement.shape[1]))
 
     except KeyError as e:
         st.error(f"Missing data for ratio calculation: {e}")
