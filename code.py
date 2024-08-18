@@ -3,37 +3,20 @@ import yfinance as yf
 import pandas as pd
 import requests
 import hashlib
-import os
 
-# File to store credentials
-CREDENTIALS_FILE = "credentials.csv"
+# Initialize session state for credentials storage
+if 'users' not in st.session_state:
+    st.session_state.users = {}
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def save_credentials(username, hashed_password):
-    if not os.path.exists(CREDENTIALS_FILE):
-        # Create file and write header if it doesn't exist
-        with open(CREDENTIALS_FILE, "w") as file:
-            file.write("username,password\n")
-    
-    # Append the new credentials
-    with open(CREDENTIALS_FILE, "a") as file:
-        file.write(f"{username},{hashed_password}\n")
+    st.session_state.users[username] = hashed_password
 
 def check_credentials(username, password):
-    if not os.path.exists(CREDENTIALS_FILE):
-        return False
-    
     hashed_password = hash_password(password)
-    
-    with open(CREDENTIALS_FILE, "r") as file:
-        for line in file:
-            stored_username, stored_password = line.strip().split(",")
-            if stored_username == username and stored_password == hashed_password:
-                return True
-    
-    return False
+    return st.session_state.users.get(username) == hashed_password
 
 def fetch_and_process_data(ticker):
     stock = yf.Ticker(ticker)
@@ -90,11 +73,11 @@ def app():
 
         if st.button("Register"):
             if password == confirm_password:
-                if not check_credentials(username, password):
+                if username in st.session_state.users:
+                    st.error("Username already exists. Please choose a different username.")
+                else:
                     save_credentials(username, hash_password(password))
                     st.success("Registration successful! You can now log in.")
-                else:
-                    st.error("Username already exists. Please choose a different username.")
             else:
                 st.error("Passwords do not match.")
 
@@ -105,6 +88,7 @@ def app():
 
         if st.button("Login"):
             if check_credentials(username, password):
+                st.session_state.logged_in = True
                 st.success("Login successful!")
                 # Main application logic
                 ticker = st.text_input("Enter the ticker symbol (e.g., AAPL, MSFT):")
