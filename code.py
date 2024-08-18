@@ -23,6 +23,8 @@ def filter_relevant_data(dataframe, keywords):
 def filter_last_n_years(dataframe, years=10):
     # Convert index to datetime to filter based on the last n years
     dataframe.index = pd.to_datetime(dataframe.index, errors='coerce')
+    if dataframe.index.hasnans:
+        dataframe = dataframe.dropna(subset=['index'])
     recent_data = dataframe[dataframe.index >= pd.Timestamp.now() - pd.DateOffset(years=years)]
     return recent_data
 
@@ -54,14 +56,14 @@ def main():
             filtered_income_statement = filter_relevant_data(income_statement, income_keywords)
 
             # Filter for the last 10 years
-            filtered_balance_sheet = filter_last_n_years(filtered_balance_sheet)
-            filtered_income_statement = filter_last_n_years(filtered_income_statement)
+            filtered_balance_sheet_last_10_years = filter_last_n_years(filtered_balance_sheet)
+            filtered_income_statement_last_10_years = filter_last_n_years(filtered_income_statement)
 
             st.write("Filtered Balance Sheet Data (Last 10 Years):")
-            st.dataframe(filtered_balance_sheet)
+            st.dataframe(filtered_balance_sheet_last_10_years)
 
             st.write("Filtered Income Statement Data (Last 10 Years):")
-            st.dataframe(filtered_income_statement)
+            st.dataframe(filtered_income_statement_last_10_years)
             
         except Exception as e:
             st.error(f"An error occurred: {e}")
