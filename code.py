@@ -41,7 +41,8 @@ def fetch_news_articles(query, api_key):
             description = article.get('description', 'No description') or 'No description'
             content = article.get('content', 'No content') or 'No content'
             url = article.get('url', '')
-            
+
+            # Check if the article is in English
             if is_english(title + " " + description + " " + content):
                 sentiment = analyze_sentiment(content)
                 articles.append({
