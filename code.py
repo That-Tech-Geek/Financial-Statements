@@ -43,27 +43,30 @@ def fetch_and_process_data(ticker):
     return historical_data, balance_sheet, income_statement
 
 def fetch_legal_cases(ticker):
-    url = f"https://example-legal-cases-website.com/cases?company={ticker}"
+    # Define the URL for SEC EDGAR search
+    url = f"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker}&type=8-K"
     try:
         response = requests.get(url)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # Example: Scrape legal case data
+        # Example: Extract case information from filings
         cases = []
-        for case in soup.find_all('div', class_='case'):
-            case_name = case.find('h2').text.strip()
-            case_status = case.find('span', class_='status').text.strip()
-            case_details = case.find('p', class_='details').text.strip()
-            cases.append(f"Case: {case_name}, Status: {case_status}, Details: {case_details}")
+        for filing in soup.find_all('tr', class_='blueRow') + soup.find_all('tr', class_='whiteRow'):
+            columns = filing.find_all('td')
+            if len(columns) > 2:
+                filing_date = columns[0].text.strip()
+                filing_type = columns[1].text.strip()
+                filing_description = columns[2].text.strip()
+                cases.append({"Filing Date": filing_date, "Type": filing_type, "Description": filing_description})
         
         if not cases:
-            return ["No legal cases data available for this ticker."]
+            return [{"Filing Date": "No data available", "Type": "", "Description": ""}]
         
         return cases
     
-    except Exception as e:
-        return [f"An error occurred while fetching legal cases: {e}"]
+    except requests.exceptions.RequestException as e:
+        return [{"Filing Date": "Error", "Type": str(e), "Description": ""}]
 
 def main():
     st.title("Equity Analysis Jumpstarter")
@@ -78,7 +81,7 @@ def main():
             # Fetch data
             historical_data, balance_sheet, income_statement = fetch_and_process_data(ticker)
             
-            # Print data to debug
+            # Display financial data
             st.write("Historical Share Price Data:")
             st.dataframe(historical_data)
             
@@ -88,14 +91,16 @@ def main():
             st.write("Income Statement:")
             st.dataframe(income_statement)
 
-            # Define keywords to look for
-            income_keywords = ["Profit After Tax", "EBITDA", "Net Income", "Operating Income", "Gross Profit"]
-            balance_keywords = ["Total Assets", "Total Liabilities", "Shareholder Equity", "Current Assets", "Current Liabilities"]
-
             # Fetch and display legal cases
+            st.write("Fetching legal cases...")
             legal_cases = fetch_legal_cases(ticker)
-            st.write("Legal Cases Pending or in Progress:")
-            st.write(legal_cases)
+            
+            if legal_cases:
+                st.write("Legal Cases or Filings:")
+                legal_cases_df = pd.DataFrame(legal_cases)
+                st.dataframe(legal_cases_df)
+            else:
+                st.write("No legal cases data available.")
 
         except Exception as e:
             st.error(f"An error occurred: {e}")
