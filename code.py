@@ -4,10 +4,10 @@ import pandas as pd
 import requests
 from cryptography.fernet import Fernet
 
-# Access user credentials and key from Streamlit secrets
-KEY = st.secrets["encryption_key"].encode()
+# Access encryption key and user credentials from Streamlit secrets
+KEY = st.secrets["encryption"]["key"].encode()
 fernet = Fernet(KEY)
-USER_CREDENTIALS_ENCRYPTED = st.secrets["user_credentials"]
+USER_CREDENTIALS_ENCRYPTED = st.secrets["credentials"]
 
 def encrypt_password(password):
     return fernet.encrypt(password.encode()).decode()
