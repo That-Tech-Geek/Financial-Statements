@@ -42,7 +42,7 @@ def fetch_and_process_data(ticker):
     return historical_data, balance_sheet, income_statement
 
 def fetch_news_articles(query, api_key):
-    url = f"https://newsapi.org/v2/everything?q={query}&apiKey=81f1784ea2074e03a558e94c792af540"
+    url = f"https://newsapi.org/v2/everything?q={query}&apiKey={api_key}"
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -71,8 +71,10 @@ def fetch_news_articles(query, api_key):
 def main():
     st.title("Equity Analysis Jumpstarter")
     st.write("Note that you will need to input the ticker of the company with its relevant suffix, i.e., .NS for NSE, so that you can get your output. There may be incompleteness in the output, which may be either because of the data not being input into the company's financial report for that year, or the data source may be incomplete. Either way, we recommend that you review the dataset and add any data needed by yourself. Thank you.")
+    
     # User input for the ticker
     ticker = st.text_input("Enter the ticker symbol (e.g., AAPL, MSFT):")
+    api_key = st.text_input("Enter your NewsAPI key:")
     
     if ticker and api_key:
         st.write(f"Fetching financial statements for ticker: {ticker}")
