@@ -7,7 +7,7 @@ from email.mime.text import MIMEText
 from cryptography.fernet import Fernet
 
 # Access encryption key and user credentials from Streamlit secrets
-KEY = st.secrets["encryption"]["key"].encode()
+KEY = st.secrets["encryption"]["key"].encode()  # Directly use the encryption key
 fernet = Fernet(KEY)
 USER_CREDENTIALS_ENCRYPTED = st.secrets["credentials"]
 NOTIFICATION_EMAIL = st.secrets["notification"]["email"]
@@ -43,7 +43,7 @@ def send_registration_notification(username):
     msg["To"] = NOTIFICATION_EMAIL
 
     try:
-        with smtplib.SMTP_SSL("smtp.example.com", 465) as server:
+        with smtplib.SMTP_SSL("smtp.example.com", 465) as server:  # Replace with your email server details
             server.login(NOTIFICATION_EMAIL, EMAIL_PASSWORD)
             server.sendmail(NOTIFICATION_EMAIL, NOTIFICATION_EMAIL, msg.as_string())
         st.success("Registration successful! We will add you to the system soon.")
