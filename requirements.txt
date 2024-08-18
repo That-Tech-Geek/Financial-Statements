@@ -6,4 +6,3 @@ matplotlib
 requests
 bs4
 langtext
-textblob
