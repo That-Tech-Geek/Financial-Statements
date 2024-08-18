@@ -42,7 +42,7 @@ def fetch_and_process_data(ticker):
 
 def main():
     st.title("Equity Analysis Jumpstarter")
-    st.subtitle("Note that you will need to input the ticker of the company with its relevant suffix, i.e., .NS for NSE, so that you can get your output. There may be incompleteness in the output, which may be either because of the data not being input into the company's financial report for that year, or the data source may be incomplete. Either way, we recommend that you review the dataset and add any data needed by yourself. Thank you.")
+    st.write("Note that you will need to input the ticker of the company with its relevant suffix, i.e., .NS for NSE, so that you can get your output. There may be incompleteness in the output, which may be either because of the data not being input into the company's financial report for that year, or the data source may be incomplete. Either way, we recommend that you review the dataset and add any data needed by yourself. Thank you.")
     
     # User input for the ticker
     ticker = st.text_input("Enter the ticker symbol (e.g., AAPL, MSFT):")
