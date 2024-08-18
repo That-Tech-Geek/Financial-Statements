@@ -2,6 +2,8 @@ import yfinance as yf
 import streamlit as st
 import pandas as pd
 import requests
+from langdetect import detect, LangDetectException
+from textblob import TextBlob
 
 def fetch_and_process_data(ticker):
     stock = yf.Ticker(ticker)
@@ -15,6 +17,16 @@ def fetch_and_process_data(ticker):
 
     return historical_data, balance_sheet, income_statement
 
+def is_english(text):
+    try:
+        return detect(text) == 'en'
+    except LangDetectException:
+        return False
+
+def analyze_sentiment(text):
+    analysis = TextBlob(text)
+    return 'Positive' if analysis.sentiment.polarity > 0 else 'Negative' if analysis.sentiment.polarity < 0 else 'Neutral'
+
 def fetch_news_articles(query, api_key):
     url = f"https://newsapi.org/v2/everything?q={query}&apiKey={api_key}&language=en"
     try:
@@ -27,22 +39,26 @@ def fetch_news_articles(query, api_key):
         for article in data.get('articles', []):
             title = article.get('title', 'No title') or 'No title'
             description = article.get('description', 'No description') or 'No description'
-            published_at = article.get('publishedAt', 'No date') or 'No date'
+            content = article.get('content', 'No content') or 'No content'
             url = article.get('url', '')
-            articles.append({
-                "Title": title.strip() if title else 'No title',
-                "Description": description.strip() if description else 'No description',
-                "Published At": published_at.strip() if published_at else 'No date',
-                "URL": url
-            })
+            
+            if is_english(title + " " + description + " " + content):
+                sentiment = analyze_sentiment(content)
+                articles.append({
+                    "Title": title.strip(),
+                    "Description": description.strip(),
+                    "Sentiment": sentiment,
+                    "Published At": article.get('publishedAt', 'No date').strip(),
+                    "URL": url
+                })
         
         if not articles:
-            return [{"Title": "No data available", "Description": "", "Published At": "", "URL": ""}]
+            return [{"Title": "No data available", "Description": "", "Sentiment": "", "Published At": "", "URL": ""}]
         
         return articles
     
     except requests.exceptions.RequestException as e:
-        return [{"Title": "Error", "Description": str(e), "Published At": "", "URL": ""}]
+        return [{"Title": "Error", "Description": str(e), "Sentiment": "", "Published At": "", "URL": ""}]
 
 def main():
     st.title("Equity Analysis Jumpstarter")
