@@ -66,13 +66,6 @@ def main():
             # Define keywords to look for
             income_keywords = ["Profit After Tax", "EBITDA", "Net Income", "Operating Income", "Gross Profit"]
             balance_keywords = ["Total Assets", "Total Liabilities", "Shareholder Equity", "Current Assets", "Current Liabilities"]
-
-
-            st.write("Filtered Balance Sheet Data (Last 10 Years):")
-            st.dataframe(filtered_balance_sheet_last_10_years)
-
-            st.write("Filtered Income Statement Data (Last 10 Years):")
-            st.dataframe(filtered_income_statement_last_10_years)
             
         except Exception as e:
             st.error(f"An error occurred: {e}")
