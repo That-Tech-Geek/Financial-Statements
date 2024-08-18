@@ -32,13 +32,13 @@ def main():
             # Fetch data
             balance_sheet, income_statement = fetch_data(ticker)
             
-            # Show raw data for debugging
-            st.write("Raw Balance Sheet Data:")
+            # Print data to debug
+            st.write("Balance Sheet Data (Raw):")
             st.dataframe(balance_sheet)
             
-            st.write("Raw Income Statement Data:")
+            st.write("Income Statement Data (Raw):")
             st.dataframe(income_statement)
-            
+
             # Define keywords to look for
             income_keywords = ["Profit After Tax", "EBITDA", "Net Income", "Operating Income", "Gross Profit"]
             balance_keywords = ["Total Assets", "Total Liabilities", "Shareholder Equity", "Current Assets", "Current Liabilities"]
@@ -47,10 +47,14 @@ def main():
             filtered_balance_sheet = filter_relevant_data(balance_sheet, balance_keywords)
             filtered_income_statement = filter_relevant_data(income_statement, income_keywords)
             
-            st.write("Filtered Annual Balance Sheets:")
+            # Sort by date and get the most recent 10 years
+            filtered_balance_sheet = filtered_balance_sheet.sort_index(ascending=False)
+            filtered_income_statement = filtered_income_statement.sort_index(ascending=False)
+
+            st.write("Filtered Balance Sheet Data (Last 10 Years):")
             st.dataframe(filtered_balance_sheet.head(10))
 
-            st.write("Filtered Annual Profit & Loss Statements:")
+            st.write("Filtered Income Statement Data (Last 10 Years):")
             st.dataframe(filtered_income_statement.head(10))
             
         except Exception as e:
