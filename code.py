@@ -2,12 +2,16 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import requests
+import smtplib
+from email.mime.text import MIMEText
 from cryptography.fernet import Fernet
 
 # Access encryption key and user credentials from Streamlit secrets
 KEY = st.secrets["encryption"]["key"].encode()
 fernet = Fernet(KEY)
 USER_CREDENTIALS_ENCRYPTED = st.secrets["credentials"]
+NOTIFICATION_EMAIL = st.secrets["notification"]["email"]
+EMAIL_PASSWORD = st.secrets["notification"]["password"]
 
 def encrypt_password(password):
     return fernet.encrypt(password.encode()).decode()
@@ -24,9 +28,27 @@ def check_credentials(username, password):
 def register_user(username, password):
     if username in USER_CREDENTIALS_ENCRYPTED:
         return "Username already exists. Please choose a different username."
+    # Simulate adding user to secrets (manual process needed)
     encrypted_password = encrypt_password(password)
     USER_CREDENTIALS_ENCRYPTED[username] = encrypted_password
-    return "Registration successful! You can now log in."
+    send_registration_notification(username)
+    return "Registration successful! You will be added to the system soon."
+
+def send_registration_notification(username):
+    subject = "New User Registration"
+    body = f"A new user has registered with username: {username}"
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = NOTIFICATION_EMAIL
+    msg["To"] = NOTIFICATION_EMAIL
+
+    try:
+        with smtplib.SMTP_SSL("smtp.example.com", 465) as server:
+            server.login(NOTIFICATION_EMAIL, EMAIL_PASSWORD)
+            server.sendmail(NOTIFICATION_EMAIL, NOTIFICATION_EMAIL, msg.as_string())
+        st.success("Registration successful! We will add you to the system soon.")
+    except Exception as e:
+        st.error(f"Failed to send email notification: {e}")
 
 def fetch_and_process_data(ticker):
     stock = yf.Ticker(ticker)
