@@ -2,9 +2,21 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import requests
+from cryptography.fernet import Fernet
+import utils  # Import the utility functions
 
-# Access user credentials from Streamlit secrets
-USER_CREDENTIALS = st.secrets["user_credentials"]
+# Initialize encryption key
+try:
+    key = utils.load_key()
+except FileNotFoundError:
+    key = utils.generate_key()
+    utils.save_key(key)
+
+# Load user credentials
+try:
+    USER_CREDENTIALS = utils.load_data(key=key)
+except FileNotFoundError:
+    USER_CREDENTIALS = {}
 
 def check_credentials(username, password):
     return USER_CREDENTIALS.get(username) == password
@@ -73,6 +85,7 @@ def app():
                         st.error("Username already exists. Please choose a different username.")
                     else:
                         USER_CREDENTIALS[username] = password
+                        utils.save_data(USER_CREDENTIALS, key=key)
                         st.success("Registration successful! You can now log in.")
                 else:
                     st.error("Passwords do not match.")
