@@ -2,8 +2,8 @@ import yfinance as yf
 import streamlit as st
 import pandas as pd
 import requests
-from textblob import TextBlob
 
+# Function to fetch financial data from Yahoo Finance
 def fetch_and_process_data(ticker):
     stock = yf.Ticker(ticker)
     
@@ -16,19 +16,9 @@ def fetch_and_process_data(ticker):
 
     return historical_data, balance_sheet, income_statement
 
-def is_english(text):
-    try:
-        blob = TextBlob(text)
-        return blob.detect_language() == 'en'
-    except Exception:
-        return False
-
-def analyze_sentiment(text):
-    analysis = TextBlob(text)
-    return 'Positive' if analysis.sentiment.polarity > 0 else 'Negative' if analysis.sentiment.polarity < 0 else 'Neutral'
-
+# Function to fetch news articles related to a query
 def fetch_news_articles(query, api_key):
-    url = f"https://newsapi.org/v2/everything?q={query}&apiKey={api_key}&language=en"
+    url = f"https://newsapi.org/v2/everything?q={query}&apiKey={api_key}"
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -39,28 +29,22 @@ def fetch_news_articles(query, api_key):
         for article in data.get('articles', []):
             title = article.get('title', 'No title') or 'No title'
             description = article.get('description', 'No description') or 'No description'
-            content = article.get('content', 'No content') or 'No content'
-            url = article.get('url', '')
-
-            # Check if the article is in English
-            if is_english(title + " " + description + " " + content):
-                sentiment = analyze_sentiment(content)
-                articles.append({
-                    "Title": title.strip(),
-                    "Description": description.strip(),
-                    "Sentiment": sentiment,
-                    "Published At": article.get('publishedAt', 'No date').strip(),
-                    "URL": url
-                })
+            published_at = article.get('publishedAt', 'No date') or 'No date'
+            articles.append({
+                "Title": title.strip() if title else 'No title',
+                "Description": description.strip() if description else 'No description',
+                "Published At": published_at.strip() if published_at else 'No date'
+            })
         
         if not articles:
-            return [{"Title": "No data available", "Description": "", "Sentiment": "", "Published At": "", "URL": ""}]
+            return [{"Title": "No data available", "Description": "", "Published At": ""}]
         
         return articles
     
     except requests.exceptions.RequestException as e:
-        return [{"Title": "Error", "Description": str(e), "Sentiment": "", "Published At": "", "URL": ""}]
+        return [{"Title": "Error", "Description": str(e), "Published At": ""}]
 
+# Main function to run the Streamlit app
 def main():
     st.title("Equity Analysis Jumpstarter")
     st.write("Note that you will need to input the ticker of the company with its relevant suffix, i.e., .NS for NSE, so that you can get your output. There may be incompleteness in the output, which may be either because of the data not being input into the company's financial report for that year, or the data source may be incomplete. Either way, we recommend that you review the dataset and add any data needed by yourself. Thank you.")
@@ -85,12 +69,12 @@ def main():
             st.write("Income Statement:")
             st.dataframe(income_statement)
 
-            # Fetch and display news articles
-            st.write("Fetching news articles related to the company...")
+            # Fetch and display news articles related to legal cases
+            st.write("Fetching news articles related to legal cases...")
             news_articles = fetch_news_articles(ticker, api_key)
             
             if news_articles:
-                st.write("News Articles Related to the Company:")
+                st.write("News Articles Related to Legal Cases:")
                 news_df = pd.DataFrame(news_articles)
                 st.dataframe(news_df)
             else:
