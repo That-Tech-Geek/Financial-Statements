@@ -1,6 +1,8 @@
 import yfinance as yf
 import streamlit as st
 import pandas as pd
+import requests
+from bs4 import BeautifulSoup
 
 def fetch_data(ticker):
     stock = yf.Ticker(ticker)
@@ -40,6 +42,29 @@ def fetch_and_process_data(ticker):
 
     return historical_data, balance_sheet, income_statement
 
+def fetch_legal_cases(ticker):
+    url = f"https://example-legal-cases-website.com/cases?company={ticker}"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Example: Scrape legal case data
+        cases = []
+        for case in soup.find_all('div', class_='case'):
+            case_name = case.find('h2').text.strip()
+            case_status = case.find('span', class_='status').text.strip()
+            case_details = case.find('p', class_='details').text.strip()
+            cases.append(f"Case: {case_name}, Status: {case_status}, Details: {case_details}")
+        
+        if not cases:
+            return ["No legal cases data available for this ticker."]
+        
+        return cases
+    
+    except Exception as e:
+        return [f"An error occurred while fetching legal cases: {e}"]
+
 def main():
     st.title("Equity Analysis Jumpstarter")
     st.write("Note that you will need to input the ticker of the company with its relevant suffix, i.e., .NS for NSE, so that you can get your output. There may be incompleteness in the output, which may be either because of the data not being input into the company's financial report for that year, or the data source may be incomplete. Either way, we recommend that you review the dataset and add any data needed by yourself. Thank you.")
@@ -66,7 +91,12 @@ def main():
             # Define keywords to look for
             income_keywords = ["Profit After Tax", "EBITDA", "Net Income", "Operating Income", "Gross Profit"]
             balance_keywords = ["Total Assets", "Total Liabilities", "Shareholder Equity", "Current Assets", "Current Liabilities"]
-            
+
+            # Fetch and display legal cases
+            legal_cases = fetch_legal_cases(ticker)
+            st.write("Legal Cases Pending or in Progress:")
+            st.write(legal_cases)
+
         except Exception as e:
             st.error(f"An error occurred: {e}")
 
