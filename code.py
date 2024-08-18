@@ -2,7 +2,6 @@ import yfinance as yf
 import streamlit as st
 import pandas as pd
 import requests
-from langdetect import detect, LangDetectException
 from textblob import TextBlob
 
 def fetch_and_process_data(ticker):
@@ -19,8 +18,9 @@ def fetch_and_process_data(ticker):
 
 def is_english(text):
     try:
-        return detect(text) == 'en'
-    except LangDetectException:
+        blob = TextBlob(text)
+        return blob.detect_language() == 'en'
+    except Exception:
         return False
 
 def analyze_sentiment(text):
@@ -41,7 +41,8 @@ def fetch_news_articles(query, api_key):
             description = article.get('description', 'No description') or 'No description'
             content = article.get('content', 'No content') or 'No content'
             url = article.get('url', '')
-            
+
+            # Check if the article is in English
             if is_english(title + " " + description + " " + content):
                 sentiment = analyze_sentiment(content)
                 articles.append({
