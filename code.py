@@ -51,10 +51,14 @@ def fetch_news_articles(query, api_key):
         # Example: Extract relevant information from news articles
         articles = []
         for article in data.get('articles', []):
-            title = article.get('title', 'No title').strip()
-            description = article.get('description', 'No description').strip()
-            published_at = article.get('publishedAt', 'No date').strip()
-            articles.append({"Title": title, "Description": description, "Published At": published_at})
+            title = article.get('title', 'No title') or 'No title'
+            description = article.get('description', 'No description') or 'No description'
+            published_at = article.get('publishedAt', 'No date') or 'No date'
+            articles.append({
+                "Title": title.strip() if title else 'No title',
+                "Description": description.strip() if description else 'No description',
+                "Published At": published_at.strip() if published_at else 'No date'
+            })
         
         if not articles:
             return [{"Title": "No data available", "Description": "", "Published At": ""}]
