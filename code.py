@@ -3,7 +3,6 @@ import streamlit as st
 import pandas as pd
 import requests
 
-# Function to fetch financial data from Yahoo Finance
 def fetch_and_process_data(ticker):
     stock = yf.Ticker(ticker)
     
@@ -16,9 +15,8 @@ def fetch_and_process_data(ticker):
 
     return historical_data, balance_sheet, income_statement
 
-# Function to fetch news articles related to a query
 def fetch_news_articles(query, api_key):
-    url = f"https://newsapi.org/v2/everything?q={query}&apiKey={api_key}"
+    url = f"https://newsapi.org/v2/everything?q={query}&apiKey={api_key}&language=en"
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -30,21 +28,22 @@ def fetch_news_articles(query, api_key):
             title = article.get('title', 'No title') or 'No title'
             description = article.get('description', 'No description') or 'No description'
             published_at = article.get('publishedAt', 'No date') or 'No date'
+            url = article.get('url', '')
             articles.append({
                 "Title": title.strip() if title else 'No title',
                 "Description": description.strip() if description else 'No description',
-                "Published At": published_at.strip() if published_at else 'No date'
+                "Published At": published_at.strip() if published_at else 'No date',
+                "URL": url
             })
         
         if not articles:
-            return [{"Title": "No data available", "Description": "", "Published At": ""}]
+            return [{"Title": "No data available", "Description": "", "Published At": "", "URL": ""}]
         
         return articles
     
     except requests.exceptions.RequestException as e:
-        return [{"Title": "Error", "Description": str(e), "Published At": ""}]
+        return [{"Title": "Error", "Description": str(e), "Published At": "", "URL": ""}]
 
-# Main function to run the Streamlit app
 def main():
     st.title("Equity Analysis Jumpstarter")
     st.write("Note that you will need to input the ticker of the company with its relevant suffix, i.e., .NS for NSE, so that you can get your output. There may be incompleteness in the output, which may be either because of the data not being input into the company's financial report for that year, or the data source may be incomplete. Either way, we recommend that you review the dataset and add any data needed by yourself. Thank you.")
@@ -69,12 +68,12 @@ def main():
             st.write("Income Statement:")
             st.dataframe(income_statement)
 
-            # Fetch and display news articles related to legal cases
-            st.write("Fetching news articles related to legal cases...")
+            # Fetch and display news articles
+            st.write("Fetching news articles related to the company...")
             news_articles = fetch_news_articles(ticker, api_key)
             
             if news_articles:
-                st.write("News Articles Related to Legal Cases:")
+                st.write("News Articles Related to the Company:")
                 news_df = pd.DataFrame(news_articles)
                 st.dataframe(news_df)
             else:
