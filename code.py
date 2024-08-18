@@ -2,53 +2,15 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import requests
-import smtplib
-from email.mime.text import MIMEText
-from cryptography.fernet import Fernet
 
-# Access encryption key and user credentials from Streamlit secrets
-KEY = st.secrets["encryption"]["key"].encode()
-fernet = Fernet(KEY)
-USER_CREDENTIALS_ENCRYPTED = st.secrets["credentials"]
-NOTIFICATION_EMAIL = st.secrets["notification"]["email"]
-EMAIL_PASSWORD = st.secrets["notification"]["password"]
+# Initialize encryption key
+key = get_key()
 
-def encrypt_password(password):
-    return fernet.encrypt(password.encode()).decode()
-
-def decrypt_password(encrypted_password):
-    return fernet.decrypt(encrypted_password.encode()).decode()
+# Load user credentials from session state
+USER_CREDENTIALS = load_data(key)
 
 def check_credentials(username, password):
-    encrypted_password = USER_CREDENTIALS_ENCRYPTED.get(username)
-    if encrypted_password:
-        return decrypt_password(encrypted_password) == password
-    return False
-
-def register_user(username, password):
-    if username in USER_CREDENTIALS_ENCRYPTED:
-        return "Username already exists. Please choose a different username."
-    # Simulate adding user to secrets (manual process needed)
-    encrypted_password = encrypt_password(password)
-    USER_CREDENTIALS_ENCRYPTED[username] = encrypted_password
-    send_registration_notification(username)
-    return "Registration successful! You will be added to the system soon."
-
-def send_registration_notification(username):
-    subject = "New User Registration"
-    body = f"A new user has registered with username: {username}"
-    msg = MIMEText(body)
-    msg["Subject"] = subject
-    msg["From"] = NOTIFICATION_EMAIL
-    msg["To"] = NOTIFICATION_EMAIL
-
-    try:
-        with smtplib.SMTP_SSL("smtp.example.com", 465) as server:
-            server.login(NOTIFICATION_EMAIL, EMAIL_PASSWORD)
-            server.sendmail(NOTIFICATION_EMAIL, NOTIFICATION_EMAIL, msg.as_string())
-        st.success("Registration successful! We will add you to the system soon.")
-    except Exception as e:
-        st.error(f"Failed to send email notification: {e}")
+    return USER_CREDENTIALS.get(username) == password
 
 def fetch_and_process_data(ticker):
     stock = yf.Ticker(ticker)
@@ -95,9 +57,7 @@ def app():
     # Initialize session state
     if 'logged_in' not in st.session_state:
         st.session_state.logged_in = False
-    if 'current_user' not in st.session_state:
-        st.session_state.current_user = None
-
+    
     st.title("Equity Analysis Jumpstarter")
 
     if not st.session_state.logged_in:
@@ -112,8 +72,12 @@ def app():
 
             if st.button("Register"):
                 if password == confirm_password:
-                    message = register_user(username, password)
-                    st.success(message) if "successful" in message else st.error(message)
+                    if username in USER_CREDENTIALS:
+                        st.error("Username already exists. Please choose a different username.")
+                    else:
+                        USER_CREDENTIALS[username] = password
+                        save_data(USER_CREDENTIALS, key)
+                        st.success("Registration successful! You can now log in.")
                 else:
                     st.error("Passwords do not match.")
 
@@ -125,7 +89,6 @@ def app():
             if st.button("Login"):
                 if check_credentials(username, password):
                     st.session_state.logged_in = True
-                    st.session_state.current_user = username
                     st.success("Login successful!")
                     st.experimental_rerun()  # Refresh to show main application
                 else:
