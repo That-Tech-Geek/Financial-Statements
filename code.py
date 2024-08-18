@@ -1,6 +1,8 @@
 import yfinance as yf
 import streamlit as st
 import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 def fetch_data(ticker):
     stock = yf.Ticker(ticker)
@@ -27,6 +29,17 @@ def filter_last_n_years(dataframe, years=10):
         dataframe = dataframe.dropna(subset=['index'])
     recent_data = dataframe[dataframe.index >= pd.Timestamp.now() - pd.DateOffset(years=years)]
     return recent_data
+
+def plot_correlation_heatmap(dataframe, title):
+    # Calculate correlation matrix
+    correlation_matrix = dataframe.corr()
+    
+    # Create heatmap
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt='.2f', vmin=-1, vmax=1)
+    plt.title(title)
+    plt.tight_layout()
+    st.pyplot(plt)
 
 def fetch_and_process_data(ticker):
     stock = yf.Ticker(ticker)
@@ -79,6 +92,13 @@ def main():
 
             st.write("Filtered Income Statement Data (Last 10 Years):")
             st.dataframe(filtered_income_statement_last_10_years)
+
+            # Plot correlation heatmaps
+            st.write("Correlation Heatmap for Balance Sheet Data:")
+            plot_correlation_heatmap(filtered_balance_sheet_last_10_years, 'Balance Sheet Data Correlation Heatmap')
+
+            st.write("Correlation Heatmap for Income Statement Data:")
+            plot_correlation_heatmap(filtered_income_statement_last_10_years, 'Income Statement Data Correlation Heatmap')
             
         except Exception as e:
             st.error(f"An error occurred: {e}")
