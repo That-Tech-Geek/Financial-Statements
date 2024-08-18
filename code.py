@@ -20,6 +20,31 @@ def filter_relevant_data(dataframe, keywords):
     relevant_rows = dataframe.loc[dataframe.index.str.contains('|'.join(keywords), case=False, na=False)]
     return relevant_rows
 
+def calculate_ratios(balance_sheet, income_statement):
+    # Convert index to string for merging
+    balance_sheet.index = balance_sheet.index.astype(str)
+    income_statement.index = income_statement.index.astype(str)
+    
+    ratios = pd.DataFrame(index=balance_sheet.columns)
+    
+    # Calculate financial ratios
+    try:
+        # Example ratios
+        ratios['Current Ratio'] = balance_sheet.loc['Total Current Assets'] / balance_sheet.loc['Total Current Liabilities']
+        ratios['Quick Ratio'] = (balance_sheet.loc['Total Current Assets'] - balance_sheet.loc['Inventory']) / balance_sheet.loc['Total Current Liabilities']
+        ratios['Cash Ratio'] = balance_sheet.loc['Cash And Cash Equivalents'] / balance_sheet.loc['Total Current Liabilities']
+        ratios['Debt to Equity Ratio'] = balance_sheet.loc['Total Liabilities Net Minority Interest'] / balance_sheet.loc['Total Shareholder Equity']
+        ratios['Gross Profit Margin'] = income_statement.loc['Gross Profit'] / income_statement.loc['Total Revenue']
+        ratios['Net Profit Margin'] = income_statement.loc['Net Income'] / income_statement.loc['Total Revenue']
+        ratios['Return on Assets'] = income_statement.loc['Net Income'] / balance_sheet.loc['Total Assets']
+        ratios['Return on Equity'] = income_statement.loc['Net Income'] / balance_sheet.loc['Total Shareholder Equity']
+        ratios['Interest Coverage Ratio'] = income_statement.loc['EBIT'] / income_statement.loc['Interest Expense']
+
+    except KeyError as e:
+        st.error(f"Missing data for ratio calculation: {e}")
+
+    return ratios
+
 def main():
     st.title("Company Financial Statements Viewer")
     
@@ -57,6 +82,12 @@ def main():
             st.write("Filtered Income Statement Data (Last 10 Years):")
             st.dataframe(filtered_income_statement.head(10))
             
+            # Calculate ratios
+            ratios = calculate_ratios(filtered_balance_sheet, filtered_income_statement)
+            
+            st.write("Financial Ratios:")
+            st.dataframe(ratios)
+
         except Exception as e:
             st.error(f"An error occurred: {e}")
 
