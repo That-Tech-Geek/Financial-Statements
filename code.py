@@ -57,10 +57,10 @@ def main():
             st.write("Historical Data:")
             st.dataframe(historical_data)
             
-            st.write("Balance Sheet Data (Raw):")
+            st.write("Balance Sheet:")
             st.dataframe(balance_sheet)
             
-            st.write("Income Statement Data (Raw):")
+            st.write("Income Statement:")
             st.dataframe(income_statement)
 
             # Define keywords to look for
