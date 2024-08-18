@@ -3,10 +3,8 @@ import yfinance as yf
 import pandas as pd
 import requests
 
-# Hardcoded users for demonstration purposes
-USER_CREDENTIALS = {
-    "testuser": "testpassword"  # Username: Password
-}
+# Access user credentials from Streamlit secrets
+USER_CREDENTIALS = st.secrets["user_credentials"]
 
 def check_credentials(username, password):
     return USER_CREDENTIALS.get(username) == password
@@ -111,7 +109,6 @@ def app():
                 st.dataframe(income_statement)
 
                 # Fetch and display news articles
-                st.write("Fetching news articles related to the company...")
                 news_articles = fetch_news_articles(ticker, api_key)
                 
                 if news_articles:
