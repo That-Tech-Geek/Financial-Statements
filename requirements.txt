@@ -3,3 +3,5 @@ streamlit
 yfinance
 seaborn
 matplotlib
+requests
+bs4
