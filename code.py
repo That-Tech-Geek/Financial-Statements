@@ -1,15 +1,29 @@
+import streamlit as st
 import yfinance as yf
 import pandas as pd
 import requests
+import hashlib
 
-# Initialize encryption key
-key = get_key()
+# Initialize session state
+if 'users' not in st.session_state:
+    st.session_state.users = {}
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+if 'current_user' not in st.session_state:
+    st.session_state.current_user = None
 
-# Load user credentials from session state
-USER_CREDENTIALS = load_data(key)
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
 
 def check_credentials(username, password):
-    return USER_CREDENTIALS.get(username) == password
+    hashed_password = hash_password(password)
+    return st.session_state.users.get(username) == hashed_password
+
+def register_user(username, password):
+    if username in st.session_state.users:
+        return "Username already exists. Please choose a different username."
+    st.session_state.users[username] = hash_password(password)
+    return "Registration successful! You can now log in."
 
 def fetch_and_process_data(ticker):
     stock = yf.Ticker(ticker)
@@ -53,10 +67,6 @@ def fetch_news_articles(query, api_key):
         return [{"Title": "Error", "Description": str(e), "Published At": "", "URL": ""}]
 
 def app():
-    # Initialize session state
-    if 'logged_in' not in st.session_state:
-        st.session_state.logged_in = False
-    
     st.title("Equity Analysis Jumpstarter")
 
     if not st.session_state.logged_in:
@@ -71,12 +81,8 @@ def app():
 
             if st.button("Register"):
                 if password == confirm_password:
-                    if username in USER_CREDENTIALS:
-                        st.error("Username already exists. Please choose a different username.")
-                    else:
-                        USER_CREDENTIALS[username] = password
-                        save_data(USER_CREDENTIALS, key)
-                        st.success("Registration successful! You can now log in.")
+                    message = register_user(username, password)
+                    st.success(message) if "successful" in message else st.error(message)
                 else:
                     st.error("Passwords do not match.")
 
@@ -88,6 +94,7 @@ def app():
             if st.button("Login"):
                 if check_credentials(username, password):
                     st.session_state.logged_in = True
+                    st.session_state.current_user = username
                     st.success("Login successful!")
                     st.experimental_rerun()  # Refresh to show main application
                 else:
