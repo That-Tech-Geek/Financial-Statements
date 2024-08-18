@@ -67,13 +67,6 @@ def main():
             income_keywords = ["Profit After Tax", "EBITDA", "Net Income", "Operating Income", "Gross Profit"]
             balance_keywords = ["Total Assets", "Total Liabilities", "Shareholder Equity", "Current Assets", "Current Liabilities"]
 
-            # Filter data
-            filtered_balance_sheet = filter_relevant_data(balance_sheet, balance_keywords)
-            filtered_income_statement = filter_relevant_data(income_statement, income_keywords)
-
-            # Filter for the last 10 years
-            filtered_balance_sheet_last_10_years = filter_last_n_years(filtered_balance_sheet)
-            filtered_income_statement_last_10_years = filter_last_n_years(filtered_income_statement)
 
             st.write("Filtered Balance Sheet Data (Last 10 Years):")
             st.dataframe(filtered_balance_sheet_last_10_years)
