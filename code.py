@@ -2,7 +2,6 @@ import yfinance as yf
 import streamlit as st
 import pandas as pd
 import requests
-from bs4 import BeautifulSoup
 
 def fetch_data(ticker):
     stock = yf.Ticker(ticker)
@@ -42,31 +41,28 @@ def fetch_and_process_data(ticker):
 
     return historical_data, balance_sheet, income_statement
 
-def fetch_legal_cases(ticker):
-    # Define the URL for SEC EDGAR search
-    url = f"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker}&type=8-K"
+def fetch_news_articles(query, api_key):
+    url = f"https://newsapi.org/v2/everything?q={query}&apiKey={api_key}"
     try:
         response = requests.get(url)
         response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
+        data = response.json()
         
-        # Example: Extract case information from filings
-        cases = []
-        for filing in soup.find_all('tr', class_='blueRow') + soup.find_all('tr', class_='whiteRow'):
-            columns = filing.find_all('td')
-            if len(columns) > 2:
-                filing_date = columns[0].text.strip()
-                filing_type = columns[1].text.strip()
-                filing_description = columns[2].text.strip()
-                cases.append({"Filing Date": filing_date, "Type": filing_type, "Description": filing_description})
+        # Example: Extract relevant information from news articles
+        articles = []
+        for article in data.get('articles', []):
+            title = article.get('title', 'No title').strip()
+            description = article.get('description', 'No description').strip()
+            published_at = article.get('publishedAt', 'No date').strip()
+            articles.append({"Title": title, "Description": description, "Published At": published_at})
         
-        if not cases:
-            return [{"Filing Date": "No data available", "Type": "", "Description": ""}]
+        if not articles:
+            return [{"Title": "No data available", "Description": "", "Published At": ""}]
         
-        return cases
+        return articles
     
     except requests.exceptions.RequestException as e:
-        return [{"Filing Date": "Error", "Type": str(e), "Description": ""}]
+        return [{"Title": "Error", "Description": str(e), "Published At": ""}]
 
 def main():
     st.title("Equity Analysis Jumpstarter")
@@ -74,8 +70,9 @@ def main():
     
     # User input for the ticker
     ticker = st.text_input("Enter the ticker symbol (e.g., AAPL, MSFT):")
+    api_key = st.text_input("Enter your NewsAPI key:")
     
-    if ticker:
+    if ticker and api_key:
         st.write(f"Fetching financial statements for ticker: {ticker}")
         try:
             # Fetch data
@@ -91,15 +88,16 @@ def main():
             st.write("Income Statement:")
             st.dataframe(income_statement)
 
-            # Fetch and display legal cases
-            legal_cases = fetch_legal_cases(ticker)
+            # Fetch and display news articles
+            st.write("Fetching news articles related to legal cases...")
+            news_articles = fetch_news_articles(ticker, api_key)
             
-            if legal_cases:
-                st.write("Legal Cases or Filings:")
-                legal_cases_df = pd.DataFrame(legal_cases)
-                st.dataframe(legal_cases_df)
+            if news_articles:
+                st.write("News Articles Related to Legal Cases:")
+                news_df = pd.DataFrame(news_articles)
+                st.dataframe(news_df)
             else:
-                st.write("No legal cases data available.")
+                st.write("No news articles data available.")
 
         except Exception as e:
             st.error(f"An error occurred: {e}")
