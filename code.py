@@ -12,6 +12,10 @@ def fetch_data(ticker):
     return balance_sheet, income_statement
 
 def filter_relevant_data(dataframe, keywords):
+    # Ensure that the index is a string type for .str accessor
+    if not dataframe.index.dtype == 'object':
+        dataframe.index = dataframe.index.astype(str)
+        
     # Filter rows based on keywords
     relevant_rows = dataframe.loc[dataframe.index.str.contains('|'.join(keywords), case=False, na=False)]
     return relevant_rows
