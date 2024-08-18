@@ -1,16 +1,11 @@
-import streamlit as st
 import yfinance as yf
+import streamlit as st
 import pandas as pd
 import requests
 
-# Hardcoded users for demonstration purposes
-# In a real application, use a secure method to store and manage user credentials
-USER_CREDENTIALS = {
-    "testuser": "testpassword"  # Username: Password
-}
-
-def check_credentials(username, password):
-    return USER_CREDENTIALS.get(username) == password
+# Define the correct username and password
+USERNAME = "admin"
+PASSWORD = "password123"
 
 def fetch_and_process_data(ticker):
     stock = yf.Ticker(ticker)
@@ -53,71 +48,55 @@ def fetch_news_articles(query, api_key):
     except requests.exceptions.RequestException as e:
         return [{"Title": "Error", "Description": str(e), "Published At": "", "URL": ""}]
 
-def app():
+def main():
     st.title("Equity Analysis Jumpstarter")
 
-    # Sidebar for navigation
-    option = st.sidebar.selectbox("Select an option", ["Login", "Register"])
+    # Login
+    st.subheader("Please log in to access the application")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    login_button = st.button("Login")
+    
+    if login_button:
+        if username == USERNAME and password == PASSWORD:
+            st.success("Login successful!")
+            st.write("Note that you will need to input the ticker of the company with its relevant suffix, i.e., .NS for NSE, so that you can get your output. There may be incompleteness in the output, which may be either because of the data not being input into the company's financial report for that year, or the data source may be incomplete. Either way, we recommend that you review the dataset and add any data needed by yourself. Thank you.")
+            
+            # User input for the ticker and API key
+            ticker = st.text_input("Enter the ticker symbol (e.g., AAPL, MSFT):")
+            api_key = "81f1784ea2074e03a558e94c792af540"  # Your NewsAPI key
+            
+            if ticker:
+                st.write(f"Fetching financial statements for ticker: {ticker}")
+                try:
+                    # Fetch financial data
+                    historical_data, balance_sheet, income_statement = fetch_and_process_data(ticker)
+                    
+                    # Display financial data
+                    st.write("Historical Share Price Data:")
+                    st.dataframe(historical_data)
+                    
+                    st.write("Balance Sheet:")
+                    st.dataframe(balance_sheet)
+                    
+                    st.write("Income Statement:")
+                    st.dataframe(income_statement)
 
-    if option == "Register":
-        st.subheader("Create an Account")
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-        confirm_password = st.text_input("Confirm Password", type="password")
+                    # Fetch and display news articles
+                    st.write("Fetching news articles related to the company...")
+                    news_articles = fetch_news_articles(ticker, api_key)
+                    
+                    if news_articles:
+                        st.write("News Articles Related to the Company:")
+                        news_df = pd.DataFrame(news_articles)
+                        st.dataframe(news_df)
+                    else:
+                        st.write("No news articles data available.")
 
-        if st.button("Register"):
-            if password == confirm_password:
-                if username in USER_CREDENTIALS:
-                    st.error("Username already exists. Please choose a different username.")
-                else:
-                    USER_CREDENTIALS[username] = password
-                    st.success("Registration successful! You can now log in.")
-            else:
-                st.error("Passwords do not match.")
-
-    elif option == "Login":
-        st.subheader("Log In")
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-
-        if st.button("Login"):
-            if check_credentials(username, password):
-                st.session_state.logged_in = True
-                st.success("Login successful!")
-                
-                # Main application logic
-                ticker = st.text_input("Enter the ticker symbol (e.g., AAPL, MSFT):")
-                api_key = st.text_input("Enter your NewsAPI key", type="password")
-
-                if ticker and api_key:
-                    try:
-                        historical_data, balance_sheet, income_statement = fetch_and_process_data(ticker)
-                        
-                        # Display financial data
-                        st.write("Historical Share Price Data:")
-                        st.dataframe(historical_data)
-                        
-                        st.write("Balance Sheet:")
-                        st.dataframe(balance_sheet)
-                        
-                        st.write("Income Statement:")
-                        st.dataframe(income_statement)
-
-                        # Fetch and display news articles
-                        st.write("Fetching news articles related to the company...")
-                        news_articles = fetch_news_articles(ticker, api_key)
-                        
-                        if news_articles:
-                            st.write("News Articles Related to the Company:")
-                            news_df = pd.DataFrame(news_articles)
-                            st.dataframe(news_df)
-                        else:
-                            st.write("No news articles data available.")
-
-                    except Exception as e:
-                        st.error(f"An error occurred: {e}")
-            else:
-                st.error("Invalid username or password. Please try again.")
+                except Exception as e:
+                    st.error(f"An error occurred: {e}")
+        else:
+            st.error("Invalid username or password. Please try again.")
 
 if __name__ == "__main__":
-    app()
+    main()
