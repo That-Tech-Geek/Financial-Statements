@@ -2,21 +2,15 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import requests
-import hashlib
 
-# Initialize session state for credentials storage
-if 'users' not in st.session_state:
-    st.session_state.users = {}
-
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
-def save_credentials(username, hashed_password):
-    st.session_state.users[username] = hashed_password
+# Hardcoded users for demonstration purposes
+# In a real application, use a secure method to store and manage user credentials
+USER_CREDENTIALS = {
+    "testuser": "testpassword"  # Username: Password
+}
 
 def check_credentials(username, password):
-    hashed_password = hash_password(password)
-    return st.session_state.users.get(username) == hashed_password
+    return USER_CREDENTIALS.get(username) == password
 
 def fetch_and_process_data(ticker):
     stock = yf.Ticker(ticker)
@@ -73,10 +67,10 @@ def app():
 
         if st.button("Register"):
             if password == confirm_password:
-                if username in st.session_state.users:
+                if username in USER_CREDENTIALS:
                     st.error("Username already exists. Please choose a different username.")
                 else:
-                    save_credentials(username, hash_password(password))
+                    USER_CREDENTIALS[username] = password
                     st.success("Registration successful! You can now log in.")
             else:
                 st.error("Passwords do not match.")
@@ -90,6 +84,7 @@ def app():
             if check_credentials(username, password):
                 st.session_state.logged_in = True
                 st.success("Login successful!")
+                
                 # Main application logic
                 ticker = st.text_input("Enter the ticker symbol (e.g., AAPL, MSFT):")
                 api_key = st.text_input("Enter your NewsAPI key", type="password")
