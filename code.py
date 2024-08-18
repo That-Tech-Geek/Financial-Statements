@@ -2,27 +2,30 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import requests
-import hashlib
+from cryptography.fernet import Fernet
 
-# Initialize session state
-if 'users' not in st.session_state:
-    st.session_state.users = {}
-if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
-if 'current_user' not in st.session_state:
-    st.session_state.current_user = None
+# Access user credentials and key from Streamlit secrets
+KEY = st.secrets["encryption_key"].encode()
+fernet = Fernet(KEY)
+USER_CREDENTIALS_ENCRYPTED = st.secrets["user_credentials"]
 
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+def encrypt_password(password):
+    return fernet.encrypt(password.encode()).decode()
+
+def decrypt_password(encrypted_password):
+    return fernet.decrypt(encrypted_password.encode()).decode()
 
 def check_credentials(username, password):
-    hashed_password = hash_password(password)
-    return st.session_state.users.get(username) == hashed_password
+    encrypted_password = USER_CREDENTIALS_ENCRYPTED.get(username)
+    if encrypted_password:
+        return decrypt_password(encrypted_password) == password
+    return False
 
 def register_user(username, password):
-    if username in st.session_state.users:
+    if username in USER_CREDENTIALS_ENCRYPTED:
         return "Username already exists. Please choose a different username."
-    st.session_state.users[username] = hash_password(password)
+    encrypted_password = encrypt_password(password)
+    USER_CREDENTIALS_ENCRYPTED[username] = encrypted_password
     return "Registration successful! You can now log in."
 
 def fetch_and_process_data(ticker):
@@ -67,6 +70,12 @@ def fetch_news_articles(query, api_key):
         return [{"Title": "Error", "Description": str(e), "Published At": "", "URL": ""}]
 
 def app():
+    # Initialize session state
+    if 'logged_in' not in st.session_state:
+        st.session_state.logged_in = False
+    if 'current_user' not in st.session_state:
+        st.session_state.current_user = None
+
     st.title("Equity Analysis Jumpstarter")
 
     if not st.session_state.logged_in:
