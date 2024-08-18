@@ -54,7 +54,7 @@ def main():
             historical_data, balance_sheet, income_statement = fetch_and_process_data(ticker)
             
             # Print data to debug
-            st.write("Historical Data:")
+            st.write("Historical Share Price Data:")
             st.dataframe(historical_data)
             
             st.write("Balance Sheet:")
