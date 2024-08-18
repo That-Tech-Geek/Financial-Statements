@@ -92,7 +92,6 @@ def main():
             st.dataframe(income_statement)
 
             # Fetch and display legal cases
-            st.write("Fetching legal cases...")
             legal_cases = fetch_legal_cases(ticker)
             
             if legal_cases:
