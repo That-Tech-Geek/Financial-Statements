@@ -2,6 +2,7 @@ import yfinance as yf
 import streamlit as st
 import pandas as pd
 import requests
+from bs4 import BeautifulSoup
 
 def fetch_and_process_data(ticker):
     stock = yf.Ticker(ticker)
@@ -15,18 +16,34 @@ def fetch_and_process_data(ticker):
 
     return historical_data, balance_sheet, income_statement
 
+def check_missing_data(df):
+    missing_data = df.isna().sum()
+    return missing_data[missing_data > 0]
+
+def search_missing_data(query):
+    search_url = f"https://www.google.com/search?q={query}"
+    response = requests.get(search_url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    
+    data = []
+    for item in soup.find_all('div', class_='BNeawe iBp4i AP7Wnd'):
+        text = item.get_text()
+        data.append(text)
+    
+    return data
+
+def update_dataset_with_fetched_data(df, fetched_data, column_name):
+    df[column_name] = fetched_data
+    return df
+
 def calculate_net_income(income_statement):
-    # Calculate net income based on available columns
     try:
         if not income_statement.empty:
-            # Check available columns
             available_columns = income_statement.columns.tolist()
             st.write(f"Available columns in the income statement: {available_columns}")
 
-            # Initialize Net Income column with NaN
             income_statement['Net Income'] = pd.NA
             
-            # Attempt to calculate Net Income if possible
             if 'Gross Profit' in available_columns and 'Operating Expenses' in available_columns:
                 income_statement['Net Income'] = (
                     income_statement['Gross Profit'] 
@@ -40,12 +57,10 @@ def calculate_net_income(income_statement):
             else:
                 st.warning("Required columns for calculating Net Income are missing.")
 
-            # Reset index and prepare data for annual grouping
             income_statement = income_statement.reset_index()
             income_statement['Date'] = pd.to_datetime(income_statement['Date'])
             income_statement['Year'] = income_statement['Date'].dt.year
 
-            # Calculate annual profits
             annual_profits = income_statement.groupby('Year')['Net Income'].sum()
             annual_profits_df = pd.DataFrame(annual_profits).reset_index()
             annual_profits_df.rename(columns={'Net Income': 'Annual Profit'}, inplace=True)
@@ -65,7 +80,6 @@ def fetch_news_articles(query, api_key):
         response.raise_for_status()
         data = response.json()
         
-        # Extract relevant information from news articles
         articles = []
         for article in data.get('articles', []):
             title = article.get('title', 'No title') or 'No title'
@@ -100,6 +114,15 @@ def main():
         try:
             # Fetch financial data
             historical_data, balance_sheet, income_statement = fetch_and_process_data(ticker)
+            
+            # Check and search for missing data
+            missing_data = check_missing_data(income_statement)
+            if not missing_data.empty:
+                st.write(f"Missing data detected: {missing_data}")
+                for column in missing_data.index:
+                    query = f"{ticker} {column} financial data"
+                    fetched_data = search_missing_data(query)
+                    income_statement = update_dataset_with_fetched_data(income_statement, fetched_data, column)
             
             # Calculate and add annual profits to the income statement
             income_statement, annual_profits_df = calculate_net_income(income_statement)
