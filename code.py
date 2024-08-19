@@ -33,15 +33,18 @@ def search_missing_data(query):
     return data
 
 def update_dataset_with_fetched_data(df, fetched_data, column_name):
-    df[column_name] = fetched_data
+    if len(fetched_data) == len(df):
+        df[column_name] = fetched_data
+    else:
+        st.warning(f"Fetched data length ({len(fetched_data)}) does not match DataFrame length ({len(df)}).")
     return df
 
 def calculate_net_income(income_statement):
     try:
         if not income_statement.empty:
             available_columns = income_statement.columns.tolist()
-            st.write(f"Available columns in the income statement: {available_columns}")
-
+            
+            # Initialize Net Income column
             income_statement['Net Income'] = pd.NA
             
             if 'Gross Profit' in available_columns and 'Operating Expenses' in available_columns:
@@ -57,10 +60,12 @@ def calculate_net_income(income_statement):
             else:
                 st.warning("Required columns for calculating Net Income are missing.")
 
+            # Reset index and ensure 'Date' column is in datetime format
             income_statement = income_statement.reset_index()
-            income_statement['Date'] = pd.to_datetime(income_statement['Date'])
+            income_statement['Date'] = pd.to_datetime(income_statement['Date'], errors='coerce')
             income_statement['Year'] = income_statement['Date'].dt.year
 
+            # Calculate annual profits
             annual_profits = income_statement.groupby('Year')['Net Income'].sum()
             annual_profits_df = pd.DataFrame(annual_profits).reset_index()
             annual_profits_df.rename(columns={'Net Income': 'Annual Profit'}, inplace=True)
