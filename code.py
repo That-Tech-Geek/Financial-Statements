@@ -26,7 +26,7 @@ def app():
             if check_credentials(username, password):
                 st.session_state.logged_in = True
                 st.success("Login successful!")
-                st.experimental_rerun()  # Refresh to show main application
+                # No need to rerun; just check session state
             else:
                 st.error("Invalid username or password. Please try again.")
     else:
