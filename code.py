@@ -12,7 +12,11 @@ def fetch_and_process_data(ticker):
     # Fetch balance sheet and income statement data
     balance_sheet = stock.balance_sheet.T
     income_statement = stock.financials.T
-
+    
+    # Calculate Total Assets if not directly available
+    if 'Total Assets' not in balance_sheet.columns:
+        balance_sheet['Total Assets'] = balance_sheet['Total Current Assets'] + balance_sheet['Property Plant Equipment'] + balance_sheet['Goodwill'] + balance_sheet['Intangible Assets'] + balance_sheet['Investments'] + balance_sheet['Other Assets']
+    
     return historical_data, balance_sheet, income_statement
 
 def calculate_ratios(balance_sheet, income_statement):
