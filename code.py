@@ -15,6 +15,22 @@ def fetch_and_process_data(ticker):
 
     return historical_data, balance_sheet, income_statement
 
+def calculate_annual_profits(income_statement):
+    # Calculate annual profits based on the income statement
+    try:
+        # Ensure the income statement is not empty and contains net income
+        if 'Net Income' in income_statement.columns:
+            income_statement['Year'] = income_statement.index.year
+            annual_profits = income_statement.groupby('Year')['Net Income'].sum()
+            annual_profits_df = pd.DataFrame(annual_profits).reset_index()
+            annual_profits_df.rename(columns={'Net Income': 'Annual Profit'}, inplace=True)
+            return annual_profits_df
+        else:
+            return pd.DataFrame({'Year': [], 'Annual Profit': []})
+    except Exception as e:
+        st.error(f"An error occurred while calculating annual profits: {e}")
+        return pd.DataFrame({'Year': [], 'Annual Profit': []})
+
 def fetch_news_articles(query, api_key):
     url = f"https://newsapi.org/v2/everything?q={query}&apiKey={api_key}&language=en"
     try:
@@ -68,6 +84,11 @@ def main():
             st.write("Income Statement:")
             st.dataframe(income_statement)
 
+            # Calculate and display annual profits
+            annual_profits_df = calculate_annual_profits(income_statement)
+            st.write("Annual Profits:")
+            st.dataframe(annual_profits_df)
+            
             # Fetch and display news articles
             st.write("Fetching news articles related to the company...")
             news_articles = fetch_news_articles(ticker, api_key)
