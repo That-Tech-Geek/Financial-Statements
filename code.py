@@ -24,12 +24,19 @@ def calculate_annual_profits(income_statement):
             annual_profits = income_statement.groupby('Year')['Net Income'].sum()
             annual_profits_df = pd.DataFrame(annual_profits).reset_index()
             annual_profits_df.rename(columns={'Net Income': 'Annual Profit'}, inplace=True)
-            return annual_profits_df
+            
+            # Merge the annual profits with the original income statement data
+            income_statement = income_statement.reset_index()
+            income_statement = income_statement.merge(
+                annual_profits_df, left_on='Year', right_on='Year', how='left'
+            ).set_index('Date')
+            
+            return income_statement, annual_profits_df
         else:
-            return pd.DataFrame({'Year': [], 'Annual Profit': []})
+            return income_statement, pd.DataFrame({'Year': [], 'Annual Profit': []})
     except Exception as e:
         st.error(f"An error occurred while calculating annual profits: {e}")
-        return pd.DataFrame({'Year': [], 'Annual Profit': []})
+        return income_statement, pd.DataFrame({'Year': [], 'Annual Profit': []})
 
 def fetch_news_articles(query, api_key):
     url = f"https://newsapi.org/v2/everything?q={query}&apiKey={api_key}&language=en"
@@ -74,6 +81,9 @@ def main():
             # Fetch financial data
             historical_data, balance_sheet, income_statement = fetch_and_process_data(ticker)
             
+            # Calculate and add annual profits to the income statement
+            income_statement, annual_profits_df = calculate_annual_profits(income_statement)
+            
             # Display financial data
             st.write("Historical Share Price Data:")
             st.dataframe(historical_data)
@@ -81,11 +91,9 @@ def main():
             st.write("Balance Sheet:")
             st.dataframe(balance_sheet)
             
-            st.write("Income Statement:")
+            st.write("Income Statement with Annual Profits:")
             st.dataframe(income_statement)
-
-            # Calculate and display annual profits
-            annual_profits_df = calculate_annual_profits(income_statement)
+            
             st.write("Annual Profits:")
             st.dataframe(annual_profits_df)
             
