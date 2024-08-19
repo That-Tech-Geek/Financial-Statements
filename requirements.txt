@@ -8,3 +8,4 @@ bs4
 textblob
 cryptography
 utils
+scipy.stats
