@@ -19,32 +19,38 @@ def calculate_net_income(income_statement):
     # Calculate net income based on available columns
     try:
         if not income_statement.empty:
-            # Ensure the required columns exist
-            required_columns = ['Revenue', 'Cost of Revenue', 'Operating Expenses', 'Interest Expense', 'Income Tax Expense']
-            if all(col in income_statement.columns for col in required_columns):
-                # Calculate Gross Profit
-                income_statement['Gross Profit'] = income_statement['Revenue'] - income_statement['Cost of Revenue']
-                
-                # Calculate Operating Income
-                income_statement['Operating Income'] = income_statement['Gross Profit'] - income_statement['Operating Expenses']
-                
-                # Calculate Net Income
-                income_statement['Net Income'] = income_statement['Operating Income'] - income_statement['Interest Expense'] - income_statement['Income Tax Expense']
-                
-                # Reset index to ensure 'Date' column is properly handled
-                income_statement = income_statement.reset_index()
-                income_statement['Date'] = pd.to_datetime(income_statement['Date'])
-                income_statement['Year'] = income_statement['Date'].dt.year
-                
-                # Calculate annual profits
-                annual_profits = income_statement.groupby('Year')['Net Income'].sum()
-                annual_profits_df = pd.DataFrame(annual_profits).reset_index()
-                annual_profits_df.rename(columns={'Net Income': 'Annual Profit'}, inplace=True)
-                
-                return income_statement, annual_profits_df
+            # Check available columns
+            available_columns = income_statement.columns.tolist()
+            st.write(f"Available columns in the income statement: {available_columns}")
+
+            # Initialize Net Income column with NaN
+            income_statement['Net Income'] = pd.NA
+            
+            # Attempt to calculate Net Income if possible
+            if 'Gross Profit' in available_columns and 'Operating Expenses' in available_columns:
+                income_statement['Net Income'] = (
+                    income_statement['Gross Profit'] 
+                    - income_statement['Operating Expenses']
+                )
+            elif 'Revenue' in available_columns and 'Operating Expenses' in available_columns and 'Total Expenses' in available_columns:
+                income_statement['Net Income'] = (
+                    income_statement['Revenue']
+                    - income_statement['Total Expenses']
+                )
             else:
-                st.warning("Required columns for net income calculation are missing.")
-                return income_statement, pd.DataFrame({'Year': [], 'Annual Profit': []})
+                st.warning("Required columns for calculating Net Income are missing.")
+
+            # Reset index and prepare data for annual grouping
+            income_statement = income_statement.reset_index()
+            income_statement['Date'] = pd.to_datetime(income_statement['Date'])
+            income_statement['Year'] = income_statement['Date'].dt.year
+
+            # Calculate annual profits
+            annual_profits = income_statement.groupby('Year')['Net Income'].sum()
+            annual_profits_df = pd.DataFrame(annual_profits).reset_index()
+            annual_profits_df.rename(columns={'Net Income': 'Annual Profit'}, inplace=True)
+            
+            return income_statement, annual_profits_df
         else:
             st.warning("Income statement data is empty.")
             return income_statement, pd.DataFrame({'Year': [], 'Annual Profit': []})
