@@ -15,24 +15,38 @@ def fetch_and_process_data(ticker):
 
     return historical_data, balance_sheet, income_statement
 
-def calculate_annual_profits(income_statement):
-    # Calculate annual profits based on the income statement
+def calculate_net_income(income_statement):
+    # Calculate net income based on available columns
     try:
-        # Ensure the income statement is not empty and contains net income
-        if 'Net Income' in income_statement.columns:
-            income_statement['Year'] = income_statement.index.year
-            annual_profits = income_statement.groupby('Year')['Net Income'].sum()
-            annual_profits_df = pd.DataFrame(annual_profits).reset_index()
-            annual_profits_df.rename(columns={'Net Income': 'Annual Profit'}, inplace=True)
-            
-            # Merge the annual profits with the original income statement data
-            income_statement = income_statement.reset_index()
-            income_statement = income_statement.merge(
-                annual_profits_df, left_on='Year', right_on='Year', how='left'
-            ).set_index('Date')
-            
-            return income_statement, annual_profits_df
+        if not income_statement.empty:
+            # Ensure the required columns exist
+            required_columns = ['Revenue', 'Cost of Revenue', 'Operating Expenses', 'Interest Expense', 'Income Tax Expense']
+            if all(col in income_statement.columns for col in required_columns):
+                # Calculate Gross Profit
+                income_statement['Gross Profit'] = income_statement['Revenue'] - income_statement['Cost of Revenue']
+                
+                # Calculate Operating Income
+                income_statement['Operating Income'] = income_statement['Gross Profit'] - income_statement['Operating Expenses']
+                
+                # Calculate Net Income
+                income_statement['Net Income'] = income_statement['Operating Income'] - income_statement['Interest Expense'] - income_statement['Income Tax Expense']
+                
+                # Reset index to ensure 'Date' column is properly handled
+                income_statement = income_statement.reset_index()
+                income_statement['Date'] = pd.to_datetime(income_statement['Date'])
+                income_statement['Year'] = income_statement['Date'].dt.year
+                
+                # Calculate annual profits
+                annual_profits = income_statement.groupby('Year')['Net Income'].sum()
+                annual_profits_df = pd.DataFrame(annual_profits).reset_index()
+                annual_profits_df.rename(columns={'Net Income': 'Annual Profit'}, inplace=True)
+                
+                return income_statement, annual_profits_df
+            else:
+                st.warning("Required columns for net income calculation are missing.")
+                return income_statement, pd.DataFrame({'Year': [], 'Annual Profit': []})
         else:
+            st.warning("Income statement data is empty.")
             return income_statement, pd.DataFrame({'Year': [], 'Annual Profit': []})
     except Exception as e:
         st.error(f"An error occurred while calculating annual profits: {e}")
@@ -82,7 +96,7 @@ def main():
             historical_data, balance_sheet, income_statement = fetch_and_process_data(ticker)
             
             # Calculate and add annual profits to the income statement
-            income_statement, annual_profits_df = calculate_annual_profits(income_statement)
+            income_statement, annual_profits_df = calculate_net_income(income_statement)
             
             # Display financial data
             st.write("Historical Share Price Data:")
