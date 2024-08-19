@@ -1,35 +1,7 @@
-import streamlit as st
 import yfinance as yf
+import streamlit as st
 import pandas as pd
 import requests
-
-# Access user credentials from Streamlit secrets
-USER_CREDENTIALS = st.secrets["credentials"]
-
-def check_credentials(username, password):
-    """
-    Check if the provided username and password are correct.
-    """
-    return USER_CREDENTIALS.get(username) == password
-
-def login():
-    """
-    Login page where users enter their credentials.
-    """
-    st.title("Login")
-    
-    # User input for username and password
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-
-    # Login button
-    if st.button("Login"):
-        if check_credentials(username, password):
-            st.session_state.logged_in = True
-            st.success("Login successful!")
-            st.experimental_rerun()  # Refresh the page to show the main application
-        else:
-            st.error("Invalid username or password. Please try again.")
 
 def fetch_and_process_data(ticker):
     stock = yf.Ticker(ticker)
@@ -42,6 +14,49 @@ def fetch_and_process_data(ticker):
     income_statement = stock.financials.T
 
     return historical_data, balance_sheet, income_statement
+
+def calculate_ratios(balance_sheet, income_statement):
+    ratios = {}
+    
+    try:
+        # Liquidity Ratios
+        current_ratio = balance_sheet['Total Current Assets'] / balance_sheet['Total Current Liabilities']
+        quick_ratio = (balance_sheet['Total Current Assets'] - balance_sheet['Inventory']) / balance_sheet['Total Current Liabilities']
+        cash_ratio = balance_sheet['Cash'] / balance_sheet['Total Current Liabilities']
+        
+        # Leverage Ratios
+        debt_to_equity = balance_sheet['Total Liabilities'] / balance_sheet['Total Stockholder Equity']
+        equity_ratio = balance_sheet['Total Stockholder Equity'] / balance_sheet['Total Assets']
+        debt_to_assets = balance_sheet['Total Liabilities'] / balance_sheet['Total Assets']
+        
+        # Profitability Ratios
+        gross_profit_margin = income_statement['Gross Profit'] / income_statement['Total Revenue']
+        net_profit_margin = income_statement['Net Income'] / income_statement['Total Revenue']
+        return_on_assets = income_statement['Net Income'] / balance_sheet['Total Assets']
+        return_on_equity = income_statement['Net Income'] / balance_sheet['Total Stockholder Equity']
+        
+        # Efficiency Ratios
+        asset_turnover = income_statement['Total Revenue'] / balance_sheet['Total Assets']
+        inventory_turnover = income_statement['Cost Of Revenue'] / balance_sheet['Inventory']
+        
+        ratios = {
+            "Current Ratio": current_ratio,
+            "Quick Ratio": quick_ratio,
+            "Cash Ratio": cash_ratio,
+            "Debt to Equity Ratio": debt_to_equity,
+            "Equity Ratio": equity_ratio,
+            "Debt to Assets Ratio": debt_to_assets,
+            "Gross Profit Margin": gross_profit_margin,
+            "Net Profit Margin": net_profit_margin,
+            "Return on Assets": return_on_assets,
+            "Return on Equity": return_on_equity,
+            "Asset Turnover": asset_turnover,
+            "Inventory Turnover": inventory_turnover
+        }
+    except KeyError as e:
+        st.warning(f"Some data for ratio calculation is missing: {e}")
+    
+    return ratios
 
 def fetch_news_articles(query, api_key):
     url = f"https://newsapi.org/v2/everything?q={query}&apiKey={api_key}&language=en"
@@ -72,10 +87,7 @@ def fetch_news_articles(query, api_key):
     except requests.exceptions.RequestException as e:
         return [{"Title": "Error", "Description": str(e), "Published At": "", "URL": ""}]
 
-def main_app():
-    """
-    Main application content that is shown after logging in.
-    """
+def main():
     st.title("Equity Analysis Jumpstarter")
     st.write("Note that you will need to input the ticker of the company with its relevant suffix, i.e., .NS for NSE, so that you can get your output. There may be incompleteness in the output, which may be either because of the data not being input into the company's financial report for that year, or the data source may be incomplete. Either way, we recommend that you review the dataset and add any data needed by yourself. Thank you.")
     
@@ -99,6 +111,14 @@ def main_app():
             st.write("Income Statement:")
             st.dataframe(income_statement)
 
+            # Calculate and display financial ratios
+            st.write("Financial Ratios:")
+            ratios = calculate_ratios(balance_sheet, income_statement)
+            if ratios:
+                st.dataframe(pd.DataFrame(ratios).T)
+            else:
+                st.write("Ratios could not be calculated due to missing data.")
+
             # Fetch and display news articles
             st.write("Fetching news articles related to the company...")
             news_articles = fetch_news_articles(ticker, api_key)
@@ -113,17 +133,5 @@ def main_app():
         except Exception as e:
             st.error(f"An error occurred: {e}")
 
-def app():
-    """
-    The main function that decides whether to show the login page or the main app.
-    """
-    if 'logged_in' not in st.session_state:
-        st.session_state.logged_in = False
-    
-    if st.session_state.logged_in:
-        main_app()
-    else:
-        login()
-
 if __name__ == "__main__":
-    app()
+    main()
