@@ -16,45 +16,39 @@ def fetch_and_process_data(ticker):
     return historical_data, balance_sheet, income_statement
 
 def calculate_ratios(balance_sheet, income_statement):
-    ratios = {}
+    # Calculate common financial ratios
     
-    try:
-        # Liquidity Ratios
-        current_ratio = balance_sheet['Total Current Assets'] / balance_sheet['Total Current Liabilities']
-        quick_ratio = (balance_sheet['Total Current Assets'] - balance_sheet['Inventory']) / balance_sheet['Total Current Liabilities']
-        cash_ratio = balance_sheet['Cash'] / balance_sheet['Total Current Liabilities']
-        
-        # Leverage Ratios
-        debt_to_equity = balance_sheet['Total Liabilities'] / balance_sheet['Total Stockholder Equity']
-        equity_ratio = balance_sheet['Total Stockholder Equity'] / balance_sheet['Total Assets']
-        debt_to_assets = balance_sheet['Total Liabilities'] / balance_sheet['Total Assets']
-        
-        # Profitability Ratios
-        gross_profit_margin = income_statement['Gross Profit'] / income_statement['Total Revenue']
-        net_profit_margin = income_statement['Net Income'] / income_statement['Total Revenue']
-        return_on_assets = income_statement['Net Income'] / balance_sheet['Total Assets']
-        return_on_equity = income_statement['Net Income'] / balance_sheet['Total Stockholder Equity']
-        
-        # Efficiency Ratios
-        asset_turnover = income_statement['Total Revenue'] / balance_sheet['Total Assets']
-        inventory_turnover = income_statement['Cost Of Revenue'] / balance_sheet['Inventory']
-        
-        ratios = {
-            "Current Ratio": current_ratio,
-            "Quick Ratio": quick_ratio,
-            "Cash Ratio": cash_ratio,
-            "Debt to Equity Ratio": debt_to_equity,
-            "Equity Ratio": equity_ratio,
-            "Debt to Assets Ratio": debt_to_assets,
-            "Gross Profit Margin": gross_profit_margin,
-            "Net Profit Margin": net_profit_margin,
-            "Return on Assets": return_on_assets,
-            "Return on Equity": return_on_equity,
-            "Asset Turnover": asset_turnover,
-            "Inventory Turnover": inventory_turnover
-        }
-    except KeyError as e:
-        st.warning(f"Some data for ratio calculation is missing: {e}")
+    # Liquidity Ratios
+    current_ratio = balance_sheet['Total Current Assets'] / balance_sheet['Total Current Liabilities']
+    quick_ratio = (balance_sheet['Total Current Assets'] - balance_sheet['Inventory']) / balance_sheet['Total Current Liabilities']
+    cash_ratio = balance_sheet['Cash And Cash Equivalents'] / balance_sheet['Total Current Liabilities']
+    
+    # Leverage Ratios
+    debt_to_equity_ratio = balance_sheet['Total Liabilities'] / balance_sheet['Total Stockholder Equity']
+    equity_ratio = balance_sheet['Total Stockholder Equity'] / balance_sheet['Total Assets']
+    
+    # Profitability Ratios
+    gross_profit_margin = income_statement['Gross Profit'] / income_statement['Total Revenue']
+    net_profit_margin = income_statement['Net Income'] / income_statement['Total Revenue']
+    return_on_equity = income_statement['Net Income'] / balance_sheet['Total Stockholder Equity']
+    
+    # Efficiency Ratios
+    total_assets_turnover = income_statement['Total Revenue'] / balance_sheet['Total Assets']
+    fixed_asset_turnover = income_statement['Total Revenue'] / balance_sheet['Property Plant Equipment']
+
+    # Combine all ratios into a DataFrame
+    ratios = pd.DataFrame({
+        "Current Ratio": current_ratio,
+        "Quick Ratio": quick_ratio,
+        "Cash Ratio": cash_ratio,
+        "Debt-to-Equity Ratio": debt_to_equity_ratio,
+        "Equity Ratio": equity_ratio,
+        "Gross Profit Margin": gross_profit_margin,
+        "Net Profit Margin": net_profit_margin,
+        "Return on Equity (ROE)": return_on_equity,
+        "Total Assets Turnover": total_assets_turnover,
+        "Fixed Asset Turnover": fixed_asset_turnover
+    })
     
     return ratios
 
@@ -110,15 +104,12 @@ def main():
             
             st.write("Income Statement:")
             st.dataframe(income_statement)
-
+            
             # Calculate and display financial ratios
-            st.write("Financial Ratios:")
             ratios = calculate_ratios(balance_sheet, income_statement)
-            if ratios:
-                st.dataframe(pd.DataFrame(ratios).T)
-            else:
-                st.write("Ratios could not be calculated due to missing data.")
-
+            st.write("Key Financial Ratios:")
+            st.dataframe(ratios)
+            
             # Fetch and display news articles
             st.write("Fetching news articles related to the company...")
             news_articles = fetch_news_articles(ticker, api_key)
