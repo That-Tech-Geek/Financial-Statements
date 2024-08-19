@@ -2,6 +2,7 @@ import yfinance as yf
 import streamlit as st
 import pandas as pd
 import requests
+import numpy as np
 
 def fetch_and_process_data(ticker):
     stock = yf.Ticker(ticker)
@@ -12,12 +13,13 @@ def fetch_and_process_data(ticker):
     # Fetch balance sheet and income statement data
     balance_sheet = stock.balance_sheet.T
     income_statement = stock.financials.T
+    cash_flow = stock.cashflow.T
     
     # Calculate Total Assets if not directly available
     if 'Total Assets' not in balance_sheet.columns:
         balance_sheet['Total Assets'] = balance_sheet['Total Current Assets'] + balance_sheet['Property Plant Equipment'] + balance_sheet['Goodwill'] + balance_sheet['Intangible Assets'] + balance_sheet['Investments'] + balance_sheet['Other Assets']
     
-    return historical_data, balance_sheet, income_statement
+    return historical_data, balance_sheet, income_statement, cash_flow
 
 def calculate_ratios(balance_sheet, income_statement):
     # Calculate common financial ratios
@@ -55,6 +57,41 @@ def calculate_ratios(balance_sheet, income_statement):
     })
     
     return ratios
+
+def calculate_wacc(balance_sheet, income_statement, cash_flow):
+    # Calculate WACC (Weighted Average Cost of Capital)
+    total_debt = balance_sheet['Total Liabilities'].iloc[-1]
+    total_equity = balance_sheet['Total Stockholder Equity'].iloc[-1]
+    total_value = total_debt + total_equity
+    
+    cost_of_equity = 0.10  # Placeholder, can be calculated using CAPM model
+    cost_of_debt = (cash_flow['Interest Expense'].iloc[-1] / total_debt) if total_debt != 0 else 0
+    
+    tax_rate = income_statement['Income Tax Expense'].iloc[-1] / income_statement['Income Before Tax'].iloc[-1]
+    
+    wacc = (total_equity / total_value) * cost_of_equity + (total_debt / total_value) * cost_of_debt * (1 - tax_rate)
+    
+    return wacc
+
+def perform_dcf_analysis(cash_flow, wacc, years=5, perpetuity_growth_rate=0.02):
+    # Estimate future Free Cash Flows (FCFs)
+    fcf = cash_flow['Free Cash Flow']
+    last_fcf = fcf.iloc[-1]
+    growth_rate = (fcf.iloc[-1] / fcf.iloc[-2]) - 1
+    
+    future_fcfs = [(last_fcf * (1 + growth_rate) ** i) for i in range(1, years + 1)]
+    
+    # Discount future FCFs to present value
+    discounted_fcfs = [fcf / ((1 + wacc) ** i) for i, fcf in enumerate(future_fcfs, start=1)]
+    
+    # Calculate terminal value using the perpetuity growth model
+    terminal_value = future_fcfs[-1] * (1 + perpetuity_growth_rate) / (wacc - perpetuity_growth_rate)
+    discounted_terminal_value = terminal_value / ((1 + wacc) ** years)
+    
+    # Calculate enterprise value
+    enterprise_value = sum(discounted_fcfs) + discounted_terminal_value
+    
+    return enterprise_value
 
 def fetch_news_articles(query, api_key):
     url = f"https://newsapi.org/v2/everything?q={query}&apiKey={api_key}&language=en"
@@ -94,39 +131,4 @@ def main():
     api_key = "81f1784ea2074e03a558e94c792af540"  # Your NewsAPI key
     
     if ticker:
-        st.write(f"Fetching financial statements for ticker: {ticker}")
-        try:
-            # Fetch financial data
-            historical_data, balance_sheet, income_statement = fetch_and_process_data(ticker)
-            
-            # Display financial data
-            st.write("Historical Share Price Data:")
-            st.dataframe(historical_data)
-            
-            st.write("Balance Sheet:")
-            st.dataframe(balance_sheet)
-            
-            st.write("Income Statement:")
-            st.dataframe(income_statement)
-            
-            # Calculate and display financial ratios
-            ratios = calculate_ratios(balance_sheet, income_statement)
-            st.write("Key Financial Ratios:")
-            st.dataframe(ratios)
-            
-            # Fetch and display news articles
-            st.write("Fetching news articles related to the company...")
-            news_articles = fetch_news_articles(ticker, api_key)
-            
-            if news_articles:
-                st.write("News Articles Related to the Company:")
-                news_df = pd.DataFrame(news_articles)
-                st.dataframe(news_df)
-            else:
-                st.write("No news articles data available.")
-
-        except Exception as e:
-            st.error(f"An error occurred: {e}")
-
-if __name__ == "__main__":
-    main()
+        st
