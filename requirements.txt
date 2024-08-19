@@ -9,3 +9,4 @@ textblob
 cryptography
 utils
 scipy
+numpy
